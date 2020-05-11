@@ -432,19 +432,31 @@ int delete_refs(const char *msg, struct string_list *refnames,
 int refs_delete_reflog(struct ref_store *refs, const char *refname);
 int delete_reflog(const char *refname);
 
-/* iterate over reflog entries */
+/* Callback to process a reflog entry found by the iteration functions (see
+ * below) */
 typedef int each_reflog_ent_fn(
 		struct object_id *old_oid, struct object_id *new_oid,
 		const char *committer, timestamp_t timestamp,
 		int tz, const char *msg, void *cb_data);
 
+/* Iterate in over reflog entries in the log for `refname`. */
+
+/* oldest entry first */
 int refs_for_each_reflog_ent(struct ref_store *refs, const char *refname,
 			     each_reflog_ent_fn fn, void *cb_data);
+
+/* youngest entry first */
 int refs_for_each_reflog_ent_reverse(struct ref_store *refs,
 				     const char *refname,
 				     each_reflog_ent_fn fn,
 				     void *cb_data);
+
+/* Call a function for each reflog entry in the log for `refname`. */
+
+/* oldest entry first */
 int for_each_reflog_ent(const char *refname, each_reflog_ent_fn fn, void *cb_data);
+
+/* youngest entry first */
 int for_each_reflog_ent_reverse(const char *refname, each_reflog_ent_fn fn, void *cb_data);
 
 /*
@@ -715,6 +727,17 @@ int refs_update_ref(struct ref_store *refs, const char *msg, const char *refname
 int update_ref(const char *msg, const char *refname,
 	       const struct object_id *new_oid, const struct object_id *old_oid,
 	       unsigned int flags, enum action_on_err onerr);
+
+/* Pseudorefs (eg. HEAD, CHERRY_PICK_HEAD) have a separate routines for updating
+   and deletion as they cannot take part in normal transactional updates.
+   Pseudorefs should only be written for the main repository.
+*/
+int ref_store_write_pseudoref(struct ref_store *refs, const char *pseudoref,
+			      const struct object_id *oid,
+			      const struct object_id *old_oid,
+			      struct strbuf *err);
+int ref_store_delete_pseudoref(struct ref_store *refs, const char *pseudoref,
+			       const struct object_id *old_oid);
 
 int parse_hide_refs_config(const char *var, const char *value, const char *);
 
